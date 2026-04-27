@@ -1,20 +1,15 @@
 #include <ezButton.h>
-
 #include <Encoder.h>
-
 #include <U8g2lib.h>
-
 #include <Arduino.h>
-
 #include <ArrayList.h>
 #include "DFRobotDFPlayerMini.h"
 #include "SoftwareSerial.h"
-//FIX FWD AND BACK BUTTONS
-//FIX SD CARD REMOVED SCREEN
 
 Encoder *knob;
 
 
+//class to make keeping track of UI elements sizes simpler :)
 class logoClass
 {
 
@@ -120,10 +115,11 @@ logoClass epd_bitmap_allArray[6] = {
 	backButton
 };
 
-//this not be a const in the future, will be dependent on files
-//read off of MicroSD card.
+
+
 int Song_count = 0;
-//place holder stuff
+//I'm pretty sure the limit is 9 songs for the reader I'm using, not
+//a lot but I don't really have much budget left to expand it
 
 //selected index
 int item_selected = 0;
@@ -148,7 +144,6 @@ long knob_pos;
 bool switch_state;
 bool last_switch_state;
 bool playpau_state = false;
-bool past_play_buttonst;
 bool play_button_st;
 bool call_back;
 bool call_fwd;
@@ -168,20 +163,20 @@ U8G2_SH1106_128X64_NONAME_2_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 void setup() {
 
 
-  u8g2.begin();
+  u8g2.begin();//starts up screen
   Serial.begin(115200);
   mySoftwareSerial.begin(9600);
   u8g2.setFont(u8g2_font_ncenB08_tr);
   back_butt.setDebounceTime(50);
   fwd_butt.setDebounceTime(50);
-  pause_butt.setDebounceTime(25);
+  pause_butt.setDebounceTime(25);//pause needs shorter debounce time
   
-  pinMode(3, INPUT);
-  pinMode(2, INPUT);
-  pinMode(4, INPUT_PULLUP);
-  pinMode(5, INPUT_PULLUP);
-  pinMode(6, INPUT_PULLUP);
-  pinMode(7, INPUT_PULLUP);
+  pinMode(3, INPUT);//knob a
+  pinMode(2, INPUT);//knob b
+  pinMode(4, INPUT_PULLUP);//knob switch
+  pinMode(5, INPUT_PULLUP);//back button
+  pinMode(6, INPUT_PULLUP);//pause button
+  pinMode(7, INPUT_PULLUP);//forward button
   last_switch_state = digitalRead(4);
   knob = new Encoder(3,2); //A, B
 
@@ -189,7 +184,7 @@ void setup() {
   if(!myDFPlayer.begin(mySoftwareSerial))
   {
 
-    Serial.println(F("It's not workingggg omggg brooooo :/ \n restart it or meet your doom."));
+    Serial.println(F("Your reader is either wired incorrectly or has no SD card, please restart."));
     while(true);
   }
 
@@ -212,43 +207,18 @@ void setup() {
    myDFPlayer.volume(10);
  
   //INPUT_PULLUP takes input when we are connected to ground making reading input easy
-/*
 
-
-  root = SD.open("/");
-  
-    dir_count = printDirectory(root);
-    file_index = 0;
-
-    for(int i = 0; i < names.size(); i++)
-    {
-
-      Serial.println(names.get(i));
-
-    }   
-     
-    Serial.println("All files listed.");
-   Song_count = names.size();
-    for(int i = Song_count + 1;i < names.size(); i++)
-    {
-
-      names.remove(i);
-
-
-    }
-    */
-  
 
 }
 
 long old_pos = -999;
 bool inserted = true;
-bool run = false;
+//checks + rotary encoder vals
 
 
 void loop() {
 
-
+  //starts checking button state
   back_butt.loop();
   fwd_butt.loop();
   pause_butt.loop();
@@ -256,16 +226,17 @@ void loop() {
   play_button_st = digitalRead(6);
 
   readKnob();
-
+//goes back an index
      if(back_butt.isPressed() && inserted == true)
     {
         
       skipBackSong();    
       myDFPlayer.previous();
       call_back = true;
-
+      //you have to use a bool
+      // here because you can only draw in the render loop
     }
-   
+//goes forward an index  
     if(fwd_butt.isPressed() && inserted == true)
     {
 
@@ -284,7 +255,7 @@ void loop() {
 
 
 
-
+//checks pause_button state, wether should play or pause song
    if(pause_butt.isPressed())
    {
 
@@ -316,7 +287,7 @@ void loop() {
             
 
 
-
+//when reaching end of songs restarts list
 
 if(item_selected == 0){
  prev_item = Song_count - 1;
@@ -340,7 +311,7 @@ next_item = item_selected + 1;
 }
 
 
-
+//makes sure the SD card is inserted, if not stops operations on card and switches UI
   if (myDFPlayer.available()) {
     uint8_t type = myDFPlayer.readType();
     int value = myDFPlayer.read();
@@ -360,7 +331,7 @@ next_item = item_selected + 1;
 
 
 
-
+//this shifts the song title display back 3px
 play_index -= 3;
    //page buffer loop
   
@@ -372,7 +343,7 @@ play_index -= 3;
             if(current_UI == 1)
             {  
 
-                   
+              //loads all UI elements onto screen     
               initUI();   
               drawSongNames(); 
               u8g2.setColorIndex(2);
@@ -403,7 +374,7 @@ play_index -= 3;
               {
                   
                 
-      
+      		//pauses screen to this UI while SD card is out of reader
                 u8g2.drawStr(0,10,"Please insert your ");
                 u8g2.drawStr(0,19, "SD card.");
                 u8g2.drawStr(0,28,"Restart to update");
@@ -430,7 +401,7 @@ play_index -= 3;
    } while(u8g2.nextPage());
 
   
-
+//restarts the title display to right after reaching edge of screen
    if(play_index < str_width)
    {
 
@@ -494,7 +465,7 @@ void drawSongNames()
   
 }
 
-
+//reads knob, moves down,up track, selects and plays songs
 void readKnob()
 {
 
@@ -555,6 +526,7 @@ if(switch_state == 0 && switch_state != last_switch_state)
 
 }
 
+//highlights back UI
 void drawBackBox()
 {
 
@@ -564,6 +536,7 @@ u8g2.drawBox(94, 5, epd_bitmap_allArray[5].Width, epd_bitmap_allArray[5].Height)
 
 }
 
+//moves down index(has to be done this way so index can be decremented at the right time)
 void skipBackSong()
 {
 
@@ -580,7 +553,7 @@ Song_selected--;
 }
 
 
-
+//same as above function
 void skipForwardSong()
 {
 
@@ -604,7 +577,7 @@ Song_selected++;
 
 
 
-
+//highlights forward box UI
 void drawForwardBox()
 {
 
