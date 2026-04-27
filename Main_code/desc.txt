@@ -1,1 +1,2 @@
 This is the code that I uploaded to the Arduino Nano R4 I used for as the microcontroller for the base of the project.
+TODO: add comments, clean up spacing, remove old unused variable, remove bad error messages.

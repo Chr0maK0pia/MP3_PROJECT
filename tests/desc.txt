@@ -1,2 +1,4 @@
 this is the tests I did to get an understanding of the hardware I used.
-It also helped me prevent ruining my main code, isolating errors, and realise that a lot of my parts weren't compatible with avr architecture.. :(. 
+It also helped me prevent ruining my main code, isolating errors, and 
+realise that a lot of my parts weren't compatible with avr architecture.. :(. 
+TODO: add comments explaining thought process, clean up spacing, add recent files.

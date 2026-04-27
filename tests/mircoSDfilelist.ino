@@ -32,7 +32,7 @@ void setup() {
   Serial.println("Loading SD card....");
   if(!SD.begin(cs_pin))
   {
-      Serial.println("Your shit broke, idk why, fix it and reset.");
+      Serial.println("Your card isn't wired correctly or inserted, fix it and reset.");
 
       while(true);
   }
